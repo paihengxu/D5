@@ -66,28 +66,52 @@ if __name__ == '__main__':
     # problem = pkl.load(open(args.problem_path, 'rb'))
 
     # loading the problem from edu dataset
+    # dataloader = SimSEDataLoader()
+    # full_datasets = dataloader.full_datasets
+    # temp_dataset = dataloader.prepare_dataset(label_name='Self-Regulation')
+    # problem = {
+    #     'generation': 'teaching quality reflected in the classroom transcripts',
+    #     'dataset_description': 'classroom transcripts for teaching math word problems',
+    #     'target': 'what teaching strategy is more frequent in different groups of transcripts',
+    #     'user': 'an education researcher',
+    #     'A_desc': 'high quality teaching samples',
+    #     'B_desc': 'low quality teaching samples',
+    #     'example_hypotheses': [],
+    #     'split': {
+    #         'research': {
+    #             'A_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 1],
+    #             'B_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 0]
+    #         },
+    #         'validation': {
+    #             'A_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 1],
+    #             'B_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 0]
+    #         }
+    #     }
+    # }
+
     dataloader = SimSEDataLoader()
     full_datasets = dataloader.full_datasets
-    temp_dataset = dataloader.prepare_dataset(label_name='Self-Regulation')
+    split_datasets = dataloader.split_datasets
     problem = {
-        'generation': 'teaching quality reflected in the classroom transcripts',
+        'generation': 'teaching samples from the treatment group and control group',
         'dataset_description': 'classroom transcripts for teaching math word problems',
         'target': 'what teaching strategy is more frequent in different groups of transcripts',
         'user': 'an education researcher',
-        'A_desc': 'high quality teaching samples',
-        'B_desc': 'low quality teaching samples',
+        'A_desc': 'teaching samples in the treatment group',
+        'B_desc': 'teaching samples in the control group',
         'example_hypotheses': [],
         'split': {
             'research': {
-                'A_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 1],
-                'B_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 0]
+                'A_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Treatment'],
+                'B_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Control']
             },
             'validation': {
-                'A_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 1],
-                'B_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 0]
+                'A_samples': [ele['text'] for ele in split_datasets['dev']+split_datasets['test'] if ele['condition'] == 'Treatment'],
+                'B_samples': [ele['text'] for ele in split_datasets['dev']+split_datasets['test'] if ele['condition'] == 'Control']
             }
         }
     }
+
 
     # dataloader = NCTEDatasetLoader()
     # full_datasets = dataloader.dataset

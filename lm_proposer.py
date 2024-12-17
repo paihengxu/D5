@@ -9,8 +9,12 @@ from copy import deepcopy
 import os
 from typing import Dict, List
 import time
+from dotenv import load_dotenv
 
-openai.api_key = os.environ['openai_key']
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+openai.api_key = OPENAI_API_KEY
 
 client = openai.OpenAI(
     # This is the default and can be omitted
