@@ -7,6 +7,7 @@ import time
 import json
 import sys
 import argparse
+import pandas as pd
 
 from D5 import D5
 from validator import DummyValidator, Validator
@@ -59,6 +60,11 @@ if __name__ == '__main__':
         '--output_path', type=str, default='output.pkl',
         help='The path to save the output pickle file. You can also use your own output pickle file.'
     )
+    parser.add_argument(
+        '--simse_var', type=str, default='Treatment',
+        choices=['Objective', 'Unpacking', 'Self-Instruction', 'Self-Regulation', 'Ending', 'Treatment'],
+        help='variable name for SimSE dataset'
+    )
 
     args = parser.parse_args()
 
@@ -66,51 +72,55 @@ if __name__ == '__main__':
     # problem = pkl.load(open(args.problem_path, 'rb'))
 
     # loading the problem from edu dataset
-    # dataloader = SimSEDataLoader()
-    # full_datasets = dataloader.full_datasets
-    # temp_dataset = dataloader.prepare_dataset(label_name='Self-Regulation')
-    # problem = {
-    #     'generation': 'teaching quality reflected in the classroom transcripts',
-    #     'dataset_description': 'classroom transcripts for teaching math word problems',
-    #     'target': 'what teaching strategy is more frequent in different groups of transcripts',
-    #     'user': 'an education researcher',
-    #     'A_desc': 'high quality teaching samples',
-    #     'B_desc': 'low quality teaching samples',
-    #     'example_hypotheses': [],
-    #     'split': {
-    #         'research': {
-    #             'A_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 1],
-    #             'B_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 0]
-    #         },
-    #         'validation': {
-    #             'A_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 1],
-    #             'B_samples': [ele['text'] for ele in temp_dataset['dev'] if ele['label'] == 0]
-    #         }
-    #     }
-    # }
 
-    dataloader = SimSEDataLoader()
-    full_datasets = dataloader.full_datasets
-    split_datasets = dataloader.split_datasets
-    problem = {
-        'generation': 'teaching samples from the treatment group and control group',
-        'dataset_description': 'classroom transcripts for teaching math word problems',
-        'target': 'what teaching strategy is more frequent in different groups of transcripts',
-        'user': 'an education researcher',
-        'A_desc': 'teaching samples in the treatment group',
-        'B_desc': 'teaching samples in the control group',
-        'example_hypotheses': [],
-        'split': {
-            'research': {
-                'A_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Treatment'],
-                'B_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Control']
-            },
-            'validation': {
-                'A_samples': [ele['text'] for ele in split_datasets['dev']+split_datasets['test'] if ele['condition'] == 'Treatment'],
-                'B_samples': [ele['text'] for ele in split_datasets['dev']+split_datasets['test'] if ele['condition'] == 'Control']
+    if args.simse_var == 'Treatment':
+        dataloader = SimSEDataLoader()
+        full_datasets = dataloader.full_datasets
+        split_datasets = dataloader.split_datasets
+        problem = {
+            'generation': 'teaching samples from the treatment group and control group',
+            'dataset_description': 'classroom transcripts for teaching math word problems',
+            'target': 'what teaching strategy is more frequent in different groups of transcripts',
+            'user': 'an education researcher',
+            'A_desc': 'teaching samples in the treatment group',
+            'B_desc': 'teaching samples in the control group',
+            'example_hypotheses': [],
+            'split': {
+                'research': {
+                    'A_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Treatment'],
+                    'B_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Control']
+                },
+                'validation': {
+                    'A_samples': [ele['text'] for ele in split_datasets['dev'] + split_datasets['test'] if
+                                  ele['condition'] == 'Treatment'],
+                    'B_samples': [ele['text'] for ele in split_datasets['dev'] + split_datasets['test'] if
+                                  ele['condition'] == 'Control']
+                }
             }
         }
-    }
+    else:
+        dataloader = SimSEDataLoader()
+        full_datasets = dataloader.full_datasets
+        temp_dataset = dataloader.prepare_dataset(label_name=args.simse_var)
+        problem = {
+            'generation': 'teaching quality reflected in the classroom transcripts',
+            'dataset_description': 'classroom transcripts for teaching math word problems',
+            'target': 'what teaching strategy is more frequent in different groups of transcripts',
+            'user': 'an education researcher',
+            'A_desc': 'high quality teaching samples',
+            'B_desc': 'low quality teaching samples',
+            'example_hypotheses': [],
+            'split': {
+                'research': {
+                    'A_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 1],
+                    'B_samples': [ele['text'] for ele in temp_dataset['train'] if ele['label'] == 0]
+                },
+                'validation': {
+                    'A_samples': [ele['text'] for ele in temp_dataset['dev']+temp_dataset['test'] if ele['label'] == 1],
+                    'B_samples': [ele['text'] for ele in temp_dataset['dev']+temp_dataset['test'] if ele['label'] == 0]
+                }
+            }
+        }
 
 
     # dataloader = NCTEDatasetLoader()
@@ -172,8 +182,14 @@ if __name__ == '__main__':
     h2h_dicts = d5.run()
 
     h_sorted = sorted(h2h_dicts, key=lambda h: h2h_dicts[h]['diff_w_significance']['mu'], reverse=True)
+    pkl.dump(h2h_dicts, open(args.output_path, 'wb'))
+    results = {'hypothesis': [], 'V': []}
     for h in h_sorted:
         h_dict = h2h_dicts[h]
         # print out the example hypothesis along with their V' score
         print(h_dict['hypothesis'], 'V\'', h_dict['diff_w_significance']['mu'])
-    pkl.dump(h2h_dicts, open(args.output_path, 'wb'))
+        results['hypothesis'].append(h_dict['hypothesis'])
+        results['V'].append(h_dict['diff_w_significance']['mu'])
+
+    df = pd.DataFrame(results)
+    df.to_csv(args.output_path.replace('.pkl', '.csv'), index=False)
