@@ -9,7 +9,11 @@
 
 # Jan 1, 2025
 
-for var in 'Objective' 'Unpacking' 'Self-Instruction' 'Self-Regulation' 'Ending'
-do
-    sbatch --job-name simse_${var} --output log_dir/simse_${var}.log run.sh ${var}
-done
+#for var in 'Objective' 'Unpacking' 'Self-Instruction' 'Self-Regulation' 'Ending'
+#do
+#    sbatch --job-name simse_${var} --output log_dir/simse_${var}.log run.sh ${var}
+#done
+
+# Jan 2, 2025 - rerun the treatment experiment with metacognitive strategies included in the prompt
+var="Treatment"
+sbatch --job-name simse_${var} --output log_dir/simse_${var}.log run.sh ${var}

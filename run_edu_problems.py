@@ -78,9 +78,13 @@ if __name__ == '__main__':
         full_datasets = dataloader.full_datasets
         split_datasets = dataloader.split_datasets
         problem = {
-            'generation': 'teaching samples from the treatment group and control group',
+            # 'generation': 'teaching samples from the treatment group and control group',
+            'generation': 'teaching samples from the treatment group and control group, where the treatment group is '
+                          'when the teachers are coached to use a metacognitive modeling strategy and metacognitive '
+                          'modeling is defined as thinking aloud about thinking in order to make a strategy, task, or '
+                          'process more accessible to students',
             'dataset_description': 'classroom transcripts for teaching math word problems',
-            'target': 'what teaching strategy is more frequent in different groups of transcripts',
+            'target': 'what teaching strategy is more frequent in the treatment group than the control group',
             'user': 'an education researcher',
             'A_desc': 'teaching samples in the treatment group',
             'B_desc': 'teaching samples in the control group',
