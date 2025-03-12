@@ -19,5 +19,11 @@
 #sbatch --job-name simse_${var} --output log_dir/simse_${var}.log run.sh ${var}
 
 # Jan 3, 2025 - training group only contain high quality samples
-var="Treatment_high"
-python run_edu_problems.py --output_path results/simse_${var}.pkl --simse_var ${var}
+#var="Treatment_high"
+#python run_edu_problems.py --output_path results/simse_${var}.pkl --simse_var ${var}
+
+# Mar 5, 2025 - run experiments with the gcl dataset
+#setup="gcl"
+#python run_gcl_problem.py --output_path results/gcl.pkl 2>&1 --setup ${setup} | tee log_dir/gcl.log
+
+srun --job-name gcl_diff --output log_dir/gcl_diff.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl_diff.pkl --setup diff"
