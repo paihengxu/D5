@@ -123,6 +123,7 @@ def gpt3wrapper(max_repeat=20, **arguments):
 
 def chatgpt_wrapper(max_repeat=5, **arguments):
     i = 0
+    print(arguments['prompt'])
     while i < max_repeat:
         try:
             response = client.chat.completions.create(
@@ -169,7 +170,7 @@ class GPT3_Proposer:
         X_A = [prefix_subspan(x) for x in X_A]
         X_B = [prefix_subspan(x) for x in X_B]
 
-        num_incontext_samples = 5
+        num_incontext_samples = 25
         prompt = None
         arg_dict = {
             k: self.problem[k] for k in ['dataset_description', 'generation', 'A_desc', 'B_desc', 'user', 'target']
@@ -178,31 +179,33 @@ class GPT3_Proposer:
         for i, hypothesis in enumerate(self.example_hypotheses):
             arg_dict[f'example_hypothesis_{i + 1}'] = hypothesis
 
-        # while num_incontext_samples > 1:
-        #
-        #     sent_subset = construct_blocks(X_A, X_B, num_incontext_samples=num_incontext_samples)
-        #
-        #     A_block, B_block = sent_subset['A_block'], sent_subset['B_block']
-        #     tmp_arg_dict = deepcopy(arg_dict)
-        #     tmp_arg_dict['A_block'] = A_block
-        #     tmp_arg_dict['B_block'] = B_block
-        #     prompt = self.prompt_template.format(**tmp_arg_dict)
-        #     prompt_length = len(GPT3_TOK.encode(prompt))
-        #     if prompt_length < MAX_PROMPT_LENGTH:
-        #         break
-        #     else:
-        #         # prompt too long, reducing num_incontext_samples
-        #         print(num_incontext_samples)
-        #         num_incontext_samples -= 1
+        while num_incontext_samples > 1:
+        
+            sent_subset = construct_blocks(X_A, X_B, num_incontext_samples=num_incontext_samples)
+        
+            A_block, B_block = sent_subset['A_block'], sent_subset['B_block']
+            tmp_arg_dict = deepcopy(arg_dict)
+            tmp_arg_dict['A_block'] = A_block
+            tmp_arg_dict['B_block'] = B_block
+            prompt = self.prompt_template.format(**tmp_arg_dict)
+            prompt_length = len(GPT3_TOK.encode(prompt))
+            if prompt_length < MAX_PROMPT_LENGTH:
+                break
+            else:
+                # prompt too long, reducing num_incontext_samples
+                print(num_incontext_samples)
+                num_incontext_samples -= 1
 
-        # arg_dict['A_block'] = sent_subset['A_block']
-        # arg_dict['B_block'] = sent_subset['B_block']
-        # prompt = self.prompt_template.format(**arg_dict)
+        print(f"Using {num_incontext_samples} in-context samples, prompt length: {prompt_length}")
 
-        sent_subset = construct_blocks(X_A, X_B, num_incontext_samples=num_incontext_samples)
         arg_dict['A_block'] = sent_subset['A_block']
         arg_dict['B_block'] = sent_subset['B_block']
         prompt = self.prompt_template.format(**arg_dict)
+
+        # sent_subset = construct_blocks(X_A, X_B, num_incontext_samples=num_incontext_samples)
+        # arg_dict['A_block'] = sent_subset['A_block']
+        # arg_dict['B_block'] = sent_subset['B_block']
+        # prompt = self.prompt_template.format(**arg_dict)
 
         query_args = {
             'engine': self.engine_name,
