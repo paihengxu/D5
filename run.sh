@@ -10,8 +10,11 @@
 source /nfshomes/paiheng/.bashrc
 conda activate opend5
 
-var=${1}
+command="${1}"
 
-python run_edu_problems.py --find_representative --output_path results/simse_${var}.pkl --simse_var ${var}
+# Execute the command passed as an argument
+echo "Executing: ${command}"
+eval ${command}
+
 
 conda deactivate
