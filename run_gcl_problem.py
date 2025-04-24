@@ -60,7 +60,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--setup', type=str,
-        choices=['gcl', 'diff'],
+        choices=['gcl', 'diff', 'non_gcl'],
         help='setup for gcl study'
     )
 
@@ -119,6 +119,30 @@ if __name__ == '__main__':
             'user': 'a public health communication researcher',
             'A_desc': 'tweets with higher geo-co-located engagement rate but lower non-geo-co-located engagement rate',
             'B_desc': 'tweets with higher non-geo-co-located engagement rate but lower geo-co-located engagement rate',
+            'example_hypotheses': [],
+            'split': {
+                'research': {
+                    'A_samples': random_A_samples[:len(random_A_samples) // 2],
+                    'B_samples': random_B_samples[:len(random_B_samples) // 2]
+                },
+                'validation': {
+                    'A_samples': random_A_samples[len(random_A_samples) // 2:],
+                    'B_samples': random_B_samples[len(random_B_samples) // 2:]
+                }
+            }
+        }
+    elif args.setup == 'non_gcl':
+        random_A_samples = subset_phe_tweet_df[subset_phe_tweet_df['non-colocation'] >= 0.035347]['text'].tolist()
+        random_A_samples = random.sample(random_A_samples, len(random_A_samples))
+        random_B_samples = subset_phe_tweet_df[subset_phe_tweet_df['non-colocation'] == 0]['text'].tolist()
+        random_B_samples = random.sample(random_B_samples, len(random_B_samples))
+        problem = {
+            'generation': 'non-geo-co-located engagement rate',
+            'dataset_description': 'tweets with high and low non-geo-co-located engagement rate',
+            'target': 'what kind of tweets is more frequent in tweets with high non-geo-co-located engagement rate',
+            'user': 'a public health communication researcher',
+            'A_desc': 'tweets with high non-geo-co-located engagement rate',
+            'B_desc': 'tweets with low non-geo-co-located engagement rate',
             'example_hypotheses': [],
             'split': {
                 'research': {
