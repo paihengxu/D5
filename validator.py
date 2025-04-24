@@ -3,6 +3,8 @@ import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from typing import List, Dict
 from tqdm import trange
+import os
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 BATCH_SIZE = 32
@@ -103,19 +105,137 @@ class DummyValidator:
             yield 0.01
 
 
+class GPTValidator:
+    """
+    A validator that uses OpenAI's GPT-4o mini model to validate hypotheses against texts.
+    """
+    
+    def __init__(self, temperature=0, batch_size=100, verbose=False):
+        """
+        Initialize the GPT-4o mini validator.
+        
+        Args:
+            api_key: OpenAI API key. If None, will try to get from OPENAI_API_KEY environment variable.
+            temperature: Temperature for the model generation. Lower means more deterministic.
+            batch_size: Number of examples to process in a single API call.
+            verbose: Whether to print progress information.
+        """
+        from openai import OpenAI
+        from dotenv import load_dotenv
+
+        load_dotenv()
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("API key must be provided or set as OPENAI_API_KEY environment variable")
+        
+        self.client = OpenAI(api_key=self.api_key)
+        self.temperature = temperature
+        self.batch_size = batch_size
+        self.verbose = verbose
+        
+        # Template for the prompt
+        self.validator_template = """
+Consider the following hypothesis and text. Determine if the hypothesis is supported by the text.
+
+Hypothesis: {hypothesis}
+
+Text: {text}
+
+Is the hypothesis supported by the text? Answer with only 'Yes' or 'No'.
+"""
+
+    def validate_w_scores(self, input_dicts: List[Dict[str, str]]) -> List[float]:
+        """
+        Validate a list of input dictionaries, each containing a hypothesis and text.
+        
+        Args:
+            input_dicts: List of dictionaries, each with keys 'hypothesis' and 'text'.
+            
+        Returns:
+            An iterator that yields scores between 0 and 1 for each input dictionary,
+            representing the probability that the hypothesis is supported by the text.
+        """
+        
+        batch = []
+        for i, input_dict in enumerate(input_dicts):
+            hypothesis, text = input_dict['hypothesis'], input_dict['text']
+            prompt = self.validator_template.format(hypothesis=hypothesis, text=text)
+            batch.append(prompt)
+            
+            # Process the batch if it reaches the batch size or this is the last item
+            if len(batch) == self.batch_size or i == len(input_dicts) - 1:
+                if self.verbose:
+                    print(f"Processing batch {i // self.batch_size + 1} of {(len(input_dicts) - 1) // self.batch_size + 1}")
+                
+                results = self._process_batch(batch)
+                
+                for result in results:
+                    yield result
+                
+                # Reset batch
+                batch = []
+    
+    def _process_batch(self, batch):
+        """
+        Process a batch of prompts using the OpenAI API.
+        
+        Args:
+            batch: List of prompts to process.
+            
+        Returns:
+            List of scores between 0 and 1.
+        """
+        results = []
+        
+        # Process each prompt individually to get yes/no answers
+        for prompt in batch:
+            try:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=self.temperature,
+                    max_tokens=10
+                )
+                
+                answer = response.choices[0].message.content.strip().lower()
+                
+                # Convert yes/no to a score
+                if "yes" in answer:
+                    score = 1.0
+                elif "no" in answer:
+                    score = 0.0
+                else:
+                    # Handle ambiguous responses - treat as uncertain
+                    score = 0.5
+                    
+                results.append(score)
+                
+            except Exception as e:
+                if self.verbose:
+                    print(f"Error processing prompt: {e}")
+                # On error, return a neutral score
+                results.append(0.5)
+        
+        return results
+
+
 if __name__ == '__main__':
     input_dicts = [
         {'hypothesis': 'is a positive review', 'text': 'I like this movie.'},
         {'hypothesis': 'is a positive review', 'text': 'I hate this movie.'}
     ]
-    input_dicts = input_dicts * 100
-    validator = Validator('ruiqi-zhong/d5_t5_validator_3B')
+    input_dicts = input_dicts * 5
+    
+    # Make sure your API key is set in the environment variable OPENAI_API_KEY
+    # or pass it directly to the constructor
+    validator = GPTValidator(verbose=True)
+    
     all_results = []
     for s in validator.validate_w_scores(input_dicts):
         all_results.append(s)
+    
     import numpy as np
-
     all_results = np.array(all_results)
     pred = (all_results > 0.5).astype(int)
-    gold = np.array([1, 0] * 100)
+    gold = np.array([1, 0] * 5)
     print('acc', (pred == gold).mean())

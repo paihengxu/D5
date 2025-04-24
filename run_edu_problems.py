@@ -62,7 +62,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--simse_var', type=str, default='Treatment',
-        choices=['Objective', 'Unpacking', 'Self-Instruction', 'Self-Regulation', 'Ending', 'Treatment', 'Treatment_high'],
+        choices=['Objective', 'Unpacking', 'Self-Instruction', 'Self-Regulation', 'Ending',
+                 'Treatment', 'Treatment_high', 'Treatment_non_experimental'],
         help='variable name for SimSE dataset'
     )
 
@@ -130,6 +131,35 @@ if __name__ == '__main__':
                 'research': {
                     'A_samples': [ele['text'] for ele in split_datasets['train'] if (ele['condition'] == 'Treatment') & (ele['basename'] in filtered_df.index)],
                     'B_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Control']
+                },
+                'validation': {
+                    'A_samples': [ele['text'] for ele in split_datasets['dev'] + split_datasets['test'] if
+                                  ele['condition'] == 'Treatment'],
+                    'B_samples': [ele['text'] for ele in split_datasets['dev'] + split_datasets['test'] if
+                                  ele['condition'] == 'Control']
+                }
+            }
+        }
+    if args.simse_var == 'Treatment_non_experimental':
+        dataloader = SimSEDataLoader()
+        full_datasets = dataloader.full_datasets
+        split_datasets = dataloader.split_datasets
+        problem = {
+            # 'generation': 'teaching samples from the treatment group and control group',
+            'generation': 'teaching samples from the treatment group and control group, where the treatment group is '
+                          'when the teachers are coached to use a metacognitive modeling strategy and metacognitive '
+                          'modeling is defined as thinking aloud about thinking in order to make a strategy, task, or '
+                          'process more accessible to students',
+            'dataset_description': 'classroom transcripts for teaching math word problems',
+            'target': 'what teaching strategy is more frequent in the treatment group than the control group',
+            'user': 'an education researcher',
+            'A_desc': 'teaching samples in the treatment group',
+            'B_desc': 'teaching samples in the control group',
+            'example_hypotheses': [],
+            'split': {
+                'research': {
+                    'A_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Treatment'],
+                    'B_samples': [ele['text'] for ele in split_datasets['train'] if ele['condition'] == 'Non-Experimental']
                 },
                 'validation': {
                     'A_samples': [ele['text'] for ele in split_datasets['dev'] + split_datasets['test'] if

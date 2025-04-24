@@ -84,7 +84,8 @@ class D5:
                             'sample2score': {}, 
                             'provenance': provenance,
                             'diff_w_significance': None,
-                            'active': True
+                            'active': True,
+                            'sample2corpus': {}  # New field to store corpus membership
                         }
                         self.h2h_dicts[hyp] = h_dict
 
@@ -139,6 +140,9 @@ class D5:
                 for d, s in zip(validator_dicts, all_scores):
                     # add small perturbation so that the spearmanr correlation is still well-defined
                     d['pointer']['sample2score'][d['text']] = s + eps * random.random()
+                    # Store corpus membership information
+                    corpus = 'A' if self.sample2membership[d['text']] == 1. else 'B'
+                    d['pointer']['sample2corpus'][d['text']] = corpus
                 
                 # filter out weaker hypotheses based on UCB
                 pbar.update(len(samples))
@@ -158,6 +162,13 @@ class D5:
 
         # compute how valid each hypothesis is
         self.get_V_info()
+
+        # Ensure all samples have corpus membership recorded
+        for h, hyp_dict in self.h2h_dicts.items():
+            for sample in hyp_dict['sample2score']:
+                if sample not in hyp_dict['sample2corpus']:
+                    corpus = 'A' if self.sample2membership[sample] == 1. else 'B'
+                    hyp_dict['sample2corpus'][sample] = corpus
 
         return self.h2h_dicts
 
