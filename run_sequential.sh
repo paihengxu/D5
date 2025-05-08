@@ -112,6 +112,14 @@ for setup in "${SETUPS[@]}"; do
             start_time=$(date +"%Y-%m-%d %H:%M:%S")
             echo "Start time: $start_time"
 
+            # Check if output file already exists
+            if [ -f "$output_pkl" ]; then
+                echo "[$CURRENT_RUN/$TOTAL_RUNS] Skipping run for setup=$setup, percentile=$percentile, target=$target"
+                echo "Output file already exists: $output_pkl"
+                echo "========================================================"
+                continue
+            fi
+
             # Execute the command and redirect output to log file
             echo "=======================================================" > "$log_file"
             echo "Running setup=$setup, percentile=$percentile, target=$target" >> "$log_file"
