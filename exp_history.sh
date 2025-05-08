@@ -33,6 +33,9 @@
 #sbatch --job-name simse_${var} --output log_dir/simse_${var}.log run.sh ${var}
 
 # Apr 17, 2025 - rerun gcl experiments
-srun --job-name gcl_diff --output log_dir/gcl_diff.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl_diff.pkl --setup diff"
-srun --job-name gcl --output log_dir/gcl.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl.pkl --setup gcl"
-srun --job-name non_gcl --output log_dir/non_gcl.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/non_gcl.pkl --setup non_gcl"
+#srun --job-name gcl_diff --output log_dir/gcl_diff.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl_diff.pkl --setup diff"
+#srun --job-name gcl --output log_dir/gcl.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl.pkl --setup gcl"
+#srun --job-name non_gcl --output log_dir/non_gcl.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=5:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/non_gcl.pkl --setup non_gcl"
+
+# May 3, 2025 - gcl vs non-gcl replies
+srun --job-name gcl_replies --output log_dir/gcl_replies.log --partition=clip --account=clip --gres=gpu:rtxa6000:1 --mem=32g --time=12:00:00 bash -c "source /nfshomes/paiheng/.bashrc && conda activate opend5 && python run_gcl_problem.py --output_path results/gcl_replies.pkl --setup gcl_replies"

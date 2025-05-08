@@ -60,7 +60,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--setup', type=str,
-        choices=['gcl', 'diff', 'non_gcl'],
+        choices=['gcl', 'diff', 'non_gcl', 'gcl_replies'],
         help='setup for gcl study'
     )
 
@@ -155,6 +155,55 @@ if __name__ == '__main__':
                 }
             }
         }
+    elif args.setup == 'gcl_replies':
+        # Load the data
+        sent_df = pd.read_csv(os.path.join(data_dir, 'results/Top500NC_reply_text_explicit_place_sentiment.csv'), delimiter=',', dtype=str)
+
+        # Filter out specific authors if needed (same as in the original code)
+        to_remove = {'thedailybeast', 'texastribune', 'nytopinion', 'foreignaffairs', 'bostonreview', 'propublica',
+                     'theatlantic', 'sfgate', 'intelligencer', 'squawkcnbc', 'toustontx'}
+        sent_df = sent_df[~sent_df['author_name'].isin(to_remove)]
+
+        # Create co-located and non-co-located dataframes
+        co_located_df = sent_df[(sent_df['author_state'] == sent_df['reply_state']) &
+                                (sent_df['author_name'] != sent_df['reply_user_name']) &
+                                (sent_df['author_state'] != 'None')].copy()
+
+        non_co_located_df = sent_df[(sent_df['author_state'] != sent_df['reply_state']) &
+                                    (sent_df['author_state'] != 'None') &
+                                    (sent_df['reply_state'] != 'None')].copy()
+
+        # Add gcl indicator`
+        co_located_df['gcl'] = 1
+        non_co_located_df['gcl'] = 0
+
+        # Get random samples from each group
+        random_A_samples = co_located_df['clean_reply_text'].tolist()
+        random_A_samples = random.sample(random_A_samples, len(random_A_samples))
+        random_B_samples = non_co_located_df['clean_reply_text'].tolist()
+        random_B_samples = random.sample(random_B_samples, len(random_B_samples))
+
+        # Create context-free problem dictionary
+        problem = {
+            'generation': 'different tweet reply patterns',
+            'dataset_description': 'two sets of tweet replies with different characteristics',
+            'target': 'what kind of tweet replies is more frequent in Group A compared to Group B',
+            'user': 'a social media communication researcher',
+            'A_desc': 'tweet replies in Group A',
+            'B_desc': 'tweet replies in Group B',
+            'example_hypotheses': [],
+            'split': {
+                'research': {
+                    'A_samples': random_A_samples[:len(random_A_samples)//2],
+                    'B_samples': random_B_samples[:len(random_B_samples)//2]
+                },
+                'validation': {
+                    'A_samples': random_A_samples[len(random_A_samples)//2:],
+                    'B_samples': random_B_samples[len(random_B_samples)//2:]
+                }
+            }
+        }
+
     else:
         raise NotImplementedError
 
@@ -213,7 +262,7 @@ if __name__ == '__main__':
         problem['split']['research']['B_samples'],
         verifier,
         proposer,
-        total_hypotheses_count=30,
+        total_hypotheses_count=20,
         early_stop=True
     )
     h2h_dicts = d5.run()
